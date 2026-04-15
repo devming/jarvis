@@ -13,10 +13,11 @@
  *   node release-checker.mjs          # 정상 실행
  *   node release-checker.mjs --dry-run # 실제 액션 없이 로그만
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { execSync, spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 // ── 환경 설정 ────────────────────────────────────────────────────────────────
 
@@ -40,10 +41,7 @@ mkdirSync(join(BOT_HOME, 'config'), { recursive: true });
 function log(level, msg, data = {}) {
   const line = JSON.stringify({ ts: new Date().toISOString(), level, msg, ...data });
   console.log(line);
-  try {
-    const fd = require('node:fs').appendFileSync;
-    fd(LOG_FILE, line + '\n');
-  } catch {}
+  try { appendFileSync(LOG_FILE, line + '\n'); } catch {}
 }
 
 // ── .env 파서 ────────────────────────────────────────────────────────────────
@@ -136,7 +134,7 @@ async function sendDiscordNotification(token, channelId, embed) {
 
 function performAutoUpdate(projectRoot) {
   log('info', 'auto-update: git pull 시작');
-  execSync('git fetch upstream && git reset --hard upstream/main', {
+  execSync('git fetch origin && git merge --ff-only origin/main', {
     cwd: projectRoot, stdio: 'pipe',
   });
   log('info', 'auto-update: 파일 동기화');
@@ -208,7 +206,8 @@ async function main() {
   if (policy.mode === 'auto') {
     try {
       // 프로젝트 루트 (이 스크립트: infra/scripts/release-checker.mjs)
-      const projectRoot = join(new URL(import.meta.url).pathname, '../../..');
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const projectRoot = join(__dirname, '../..');
       performAutoUpdate(projectRoot);
       saveInstalledVersion(latestTag, publishedAt);
 

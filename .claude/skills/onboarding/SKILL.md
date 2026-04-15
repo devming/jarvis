@@ -259,10 +259,24 @@ node .claude/skills/onboarding/scripts/install-launch-agents.mjs --channel-id "$
 npm install -g pm2
 pm2 start infra/ecosystem.config.cjs
 pm2 startup && pm2 save
-
-# 릴리즈 체커는 crontab에 직접 등록 (CHANNEL_ID는 Step 10에서 파싱한 변수)
-(crontab -l 2>/dev/null; echo "0 3 * * * node /path/to/infra/scripts/release-checker.mjs --channel-id $CHANNEL_ID") | crontab -
 ```
+
+PM2 cron으로 릴리즈 체커 등록 (`ecosystem.config.cjs` 내 cron_restart 항목 추가):
+```bash
+# ecosystem.config.cjs 에 아래 항목 추가
+{
+  name: 'release-checker',
+  script: 'infra/scripts/release-checker.mjs',
+  cron_restart: '0 3 * * *',
+  autorestart: false,
+  env: { UPDATE_CHANNEL_ID: process.env.CHANNEL_ID }
+}
+```
+```bash
+pm2 reload ecosystem.config.cjs && pm2 save
+```
+
+> ⚠️ `crontab -e`는 사용하지 않음 — macOS com.vix.cron 데몬 비활성 이슈로 hang 가능. systemd timer가 필요한 경우 `~/.config/systemd/user/jarvis-release-checker.timer` 로 등록.
 
 ---
 

@@ -32,20 +32,6 @@ const SYSTEM_PERSONA = `--- Channel: ${CHANNEL_NAME} ---
 새 릴리즈 발견, 자동 업데이트 완료, 수동 업데이트 요청 알림을 전송합니다.
 Keep responses factual and actionable. Include version info and changelog links.`;
 
-function parseEnv(filePath) {
-  if (!existsSync(filePath)) return {};
-  const lines = readFileSync(filePath, 'utf-8').split('\n');
-  const result = {};
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx === -1) continue;
-    result[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
-  }
-  return result;
-}
-
 function updateEnvChannelIds(envPath, newChannelId) {
   if (!existsSync(envPath)) return;
   let content = readFileSync(envPath, 'utf-8');
